@@ -234,7 +234,7 @@ function ____exports.Game()
     gm = GoManager()
     local function init()
         local level = GameStorage.get("level")
-        num_mines = 10 + level * 2
+        num_mines = 8 + level * 3
         miner.setup(
             gridW,
             gridH,
@@ -245,11 +245,6 @@ function ____exports.Game()
         Manager.send_raw("set_cell_size", {size = cell_mul})
         gm.set_color_hash("/game_border", "#1d1fa2", 1, "border")
         update_ui()
-        timer.delay(
-            2,
-            false,
-            function() return game_end(true) end
-        )
         wait_event()
     end
     is_end_show = false
