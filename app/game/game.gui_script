@@ -1,0 +1,89 @@
+local ____exports = {}
+local close_popup, update_stats, set_miner_mode
+local druid = require("druid.druid")
+local ____utils = require("utils.utils")
+local hide_gui_list = ____utils.hide_gui_list
+local set_text = ____utils.set_text
+local set_text_colors = ____utils.set_text_colors
+local show_gui_list = ____utils.show_gui_list
+function close_popup()
+    hide_gui_list({"vic_popup", "fail_popup"})
+    Scene.load("menu")
+end
+function update_stats(is_win)
+    if is_win then
+        GameStorage.set(
+            "wins",
+            GameStorage.get("wins") + 1
+        )
+    else
+        GameStorage.set(
+            "fails",
+            GameStorage.get("fails") + 1
+        )
+    end
+end
+function set_miner_mode(id_mode)
+    local buttons = {"btnClick", "btnFlag", "btnQuest"}
+    set_text_colors(buttons, "#fff")
+    set_text_colors({buttons[id_mode + 1]}, "#babae1")
+    GAME_CONFIG.id_mode_miner = id_mode
+end
+function ____exports.init(self)
+    Manager.init_gui()
+    self.druid = druid.new(self)
+    self.druid:new_button(
+        "btnHome",
+        function()
+            Scene.load("menu")
+        end
+    )
+    self.druid:new_blocker("vic_popup")
+    self.druid:new_blocker("fail_popup")
+    self.druid:new_button("btnNext", close_popup)
+    self.druid:new_button("btnNext2", close_popup)
+    Camera.set_gui_projection(true)
+    self.druid:new_button(
+        "btnClick",
+        function() return set_miner_mode(0) end
+    )
+    self.druid:new_button(
+        "btnFlag",
+        function() return set_miner_mode(1) end
+    )
+    self.druid:new_button(
+        "btnQuest",
+        function() return set_miner_mode(2) end
+    )
+    set_miner_mode(GAME_CONFIG.id_mode_miner)
+end
+function ____exports.on_input(self, action_id, action)
+    Camera.transform_input_action(action)
+    return self.druid:on_input(action_id, action)
+end
+function ____exports.update(self, dt)
+    self.druid:update(dt)
+end
+function ____exports.on_message(self, message_id, message, sender)
+    Manager.on_message_gui(self, message_id, message, sender)
+    self.druid:on_message(message_id, message, sender)
+    if message_id == hash("game_end") then
+        local is_win = message.is_win
+        Sound.play(is_win and "vic" or "fail")
+        show_gui_list({is_win and "vic_popup" or "fail_popup"})
+        update_stats(is_win)
+    end
+    if message_id == hash("num_mines") then
+        set_text("cnt_mines", message.cnt)
+    end
+end
+function ____exports.final(self)
+    self.druid:final()
+    Camera.set_gui_projection(false)
+end
+init = ____exports.init
+on_input = ____exports.on_input
+update = ____exports.update
+on_message = ____exports.on_message
+final = ____exports.final
+

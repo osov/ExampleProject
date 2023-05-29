@@ -1,0 +1,38 @@
+local ____exports = {}
+local druid = require("druid.druid")
+function ____exports.init(self)
+    Manager.init_gui()
+    self.druid = druid.new(self)
+    self.druid:new_button(
+        "btnStart",
+        function() return Scene.load("game") end
+    )
+    self.druid:new_button(
+        "btnSettings",
+        function() return Scene.load("settings") end
+    )
+    self.druid:new_button(
+        "btnStats",
+        function() return Scene.load("stats") end
+    )
+end
+function ____exports.on_input(self, action_id, action)
+    return self.druid:on_input(action_id, action)
+end
+function ____exports.update(self, dt)
+    self.druid:update(dt)
+end
+function ____exports.on_message(self, message_id, message, sender)
+    Manager.on_message_gui(self, message_id, message, sender)
+    self.druid:on_message(message_id, message, sender)
+end
+function ____exports.final(self)
+    Manager.final()
+    self.druid:final()
+end
+init = ____exports.init
+on_input = ____exports.on_input
+update = ____exports.update
+on_message = ____exports.on_message
+final = ____exports.final
+

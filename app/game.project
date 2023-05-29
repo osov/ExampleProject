@@ -1,0 +1,66 @@
+[bootstrap]
+main_collection = /main/main.collectionc
+render = /project_settings/render.renderc
+
+[script]
+shared_state = 1
+
+[display]
+width = 960
+height = 540
+display_profiles = /project_settings/my_profile.display_profilesc
+high_dpi = 1
+
+[android]
+input_method = HiddenInputField
+display_cutout = 0
+immersive_mode = 1
+minimum_sdk_version = 21
+
+[project]
+title = Образец проекта
+bundle_resources = /bundle
+version = 1.0
+dependencies#0 = https://github.com/Insality/druid/archive/master.zip
+dependencies#1 = https://github.com/britzl/ludobits/archive/refs/heads/master.zip
+dependencies#2 = https://github.com/osov/defold-app-metrica/archive/refs/heads/main.zip
+dependencies#3 = https://github.com/osov/defold-yandex-easy-monetization/archive/refs/heads/main.zip
+dependencies#4 = https://github.com/britzl/defold-sharing/archive/master.zip
+dependencies#5 = https://github.com/britzl/defold-richtext/archive/master.zip
+dependencies#6 = https://github.com/defold/extension-review/archive/master.zip
+dependencies#7 = https://github.com/subsoap/vibrate/archive/master.zip
+dependencies#8 = https://github.com/indiesoftby/defold-yametrica/archive/refs/tags/1.0.0.zip
+dependencies#9 = https://github.com/Kyonin/instantgamesbridge/archive/refs/heads/main.zip
+
+[native_extension]
+app_manifest = /project_settings/generated.appmanifest
+
+[graphics]
+texture_profiles = /project_settings/TextureProfile.texture_profiles
+
+[input]
+use_accelerometer = 0
+game_binding = /project_settings/game.input_bindingc
+
+[html5]
+show_fullscreen_button = 0
+show_made_with_defold = 0
+show_console_banner = 0
+scale_mode = fit
+htmlfile = /project_settings/index.html
+
+[sprite]
+max_count = 1000
+
+[yametrica]
+counter_id = 93024311
+
+[instant_games_bridge]
+vk_group_id = 219982183
+
+[collection_proxy]
+max_count = 12
+
+[label]
+max_count = 256
+

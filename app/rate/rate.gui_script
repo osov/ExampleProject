@@ -1,0 +1,154 @@
+local ____exports = {}
+local show_rate, show_form, init_rate_info, show_rate_form, mark_ok, rate_log, first_start
+local druid = require("druid.druid")
+local ____game_config = require("main.game_config")
+local RATE_FIRST_SHOW = ____game_config.RATE_FIRST_SHOW
+local RATE_SECOND_SHOW = ____game_config.RATE_SECOND_SHOW
+function show_rate(cnt)
+    do
+        local i = 0
+        while i < 5 do
+            gui.play_flipbook(
+                gui.get_node("s" .. tostring(i)),
+                i <= cnt and "star_1" or "star_0"
+            )
+            i = i + 1
+        end
+    end
+end
+function show_form()
+    rate_log("show rate check")
+    if mark_ok() then
+        Rate._mark_shown()
+        rate_log("show rate OK")
+        gui.set_enabled(
+            gui.get_node("rate_bg"),
+            true
+        )
+    end
+end
+function init_rate_info()
+    Manager.init_gui()
+    rate_log = Log.get_with_prefix("rate").log
+    first_start = Storage.get_int("firstStart", 0)
+    if first_start == 0 then
+        Storage.set(
+            "firstStart",
+            System.now()
+        )
+        first_start = System.now()
+    end
+end
+function show_rate_form()
+    Storage.set("isRated", 1)
+    if System.platform == "HTML5" then
+        Ads.feedback_request_review(function()
+            log("feedback result:")
+        end)
+    elseif System.platform == "Android" then
+        if review ~= nil and review.is_supported() then
+            review.request_review()
+        else
+            rate_log("review not supported")
+        end
+    else
+        rate_log("not supported platform", System.platform)
+    end
+end
+function mark_ok()
+    if Storage.get_int("isRated", 0) == 1 then
+        rate_log("is rated")
+        return false
+    end
+    local firstShow = Storage.get_int("firstShow", 0)
+    local wait = firstShow == 0 and RATE_FIRST_SHOW or RATE_SECOND_SHOW
+    local dt = System.now() - first_start
+    if dt >= wait then
+        if firstShow ~= 0 then
+            Storage.set("isRated", 1)
+        end
+        if firstShow == 0 then
+            Storage.set(
+                "firstShow",
+                System.now()
+            )
+        end
+        rate_log("mark ok = true")
+        return true
+    else
+        rate_log("wait time:" .. tostring(wait - dt))
+        return false
+    end
+end
+function ____exports.init(self)
+    Manager.init_gui()
+    gui.set_render_order(10)
+    self.druid = druid.new(self)
+    self.druid:new_blocker("rate_bg")
+    self.druid:new_button(
+        "btnClose",
+        function()
+            gui.set_enabled(
+                gui.get_node("rate_bg"),
+                false
+            )
+        end
+    )
+    self.druid:new_button(
+        "btnRate",
+        function()
+            gui.set_enabled(
+                gui.get_node("rate_bg"),
+                false
+            )
+            show_rate_form()
+        end
+    )
+    self.druid:new_button(
+        "s0",
+        function() return show_rate(0) end
+    )
+    self.druid:new_button(
+        "s1",
+        function() return show_rate(1) end
+    )
+    self.druid:new_button(
+        "s2",
+        function() return show_rate(2) end
+    )
+    self.druid:new_button(
+        "s3",
+        function() return show_rate(3) end
+    )
+    self.druid:new_button(
+        "s4",
+        function() return show_rate(4) end
+    )
+end
+function ____exports.on_input(self, action_id, action)
+    Camera.transform_input_action(action)
+    return self.druid:on_input(action_id, action)
+end
+function ____exports.update(self, dt)
+    self.druid:update(dt)
+end
+function ____exports.on_message(self, message_id, message, sender)
+    Manager.on_message_gui(self, message_id, message, sender)
+    if message_id == to_hash("MANAGER_READY") then
+        init_rate_info()
+    end
+    if message_id == to_hash("SHOW_RATE") then
+        show_form()
+    end
+    self.druid:on_message(message_id, message, sender)
+end
+function ____exports.final(self)
+    self.druid:final()
+end
+first_start = 0
+init = ____exports.init
+on_input = ____exports.on_input
+update = ____exports.update
+on_message = ____exports.on_message
+final = ____exports.final
+

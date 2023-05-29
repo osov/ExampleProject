@@ -1,0 +1,39 @@
+local ____exports = {}
+local druid = require("druid.druid")
+local ____utils = require("utils.utils")
+local set_text = ____utils.set_text
+function ____exports.init(self)
+    Manager.init_gui()
+    self.druid = druid.new(self)
+    self.druid:new_button(
+        "btnHome",
+        function()
+            Scene.load("menu")
+        end
+    )
+    local wins = GameStorage.get("wins")
+    local fails = GameStorage.get("fails")
+    set_text(
+        "text",
+        (((("Побед..." .. tostring(wins)) .. "\n") .. "Поражений...") .. tostring(fails)) .. "\n"
+    )
+end
+function ____exports.on_input(self, action_id, action)
+    return self.druid:on_input(action_id, action)
+end
+function ____exports.update(self, dt)
+    self.druid:update(dt)
+end
+function ____exports.on_message(self, message_id, message, sender)
+    Manager.on_message_gui(self, message_id, message, sender)
+    self.druid:on_message(message_id, message, sender)
+end
+function ____exports.final(self)
+    self.druid:final()
+end
+init = ____exports.init
+on_input = ____exports.on_input
+update = ____exports.update
+on_message = ____exports.on_message
+final = ____exports.final
+
