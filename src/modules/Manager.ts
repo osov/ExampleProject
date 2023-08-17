@@ -100,6 +100,10 @@ function ManagerModule() {
         send_raw(message_id, message_data, receiver);
     }
 
+    function send_game<T extends MessageId>(message_id: T, message_data?: Messages[T], receiver = LOGIC_ID) {
+        send_raw(message_id, message_data, receiver);
+    }
+
     function send<T extends MessageId>(message_id: T, message_data?: Messages[T], receiver = MANAGER_ID) {
         send_raw(message_id, message_data, receiver);
     }
@@ -148,7 +152,8 @@ function ManagerModule() {
         broadcast.send(message_id, message);
     }
 
-    return { init, on_message, send, send_raw, send_raw_game, send_raw_ui, is_ready, init_gui, on_message_gui, update, final, register_message, trigger_message, MANAGER_ID };
+
+    return { init, on_message, send, send_raw, send_game, send_raw_game, send_raw_ui, is_ready, init_gui, on_message_gui, update, final, register_message, trigger_message, MANAGER_ID };
 }
 
 

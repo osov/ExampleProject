@@ -67,7 +67,7 @@ function LangModule() {
         return cur_lang;
     }
 
-    function get_text(code: string) {
+    function get_text(code: keyof typeof lang_data) {
         const data = langs_data[cur_lang];
         if (!data) {
             Log.warn('нет языкового набора:', cur_lang);

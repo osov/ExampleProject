@@ -41,6 +41,8 @@ interface SocialParams {
 
 type WebPlatform = "yandex" | "vk" | 'crazy_games';
 type BridgePlatforms = 'android' | 'ios';
+type CallbackAds = (state: boolean) => void;
+
 function AdsModule() {
     let _is_ready = false;
     const ads_log = Log.get_with_prefix('Ads');
@@ -55,6 +57,8 @@ function AdsModule() {
     const share_options = { 'vk': { link: '' } };
     let last_view_ads = 0;
     let is_real_reward = false;
+    let cb_inter_shown: CallbackAds;
+    let cb_rewarded_shown: CallbackAds;
 
     function init(id_banners = ['R-M-DEMO-300x250'], id_inters = ['R-M-DEMO-interstitial'], id_reward: string[] = [], banner_on_init = false, ads_interval = 4 * 60, ads_delay = 30, init_callback: InitCallback) {
         config.ads_delay = ads_delay;
@@ -121,8 +125,10 @@ function AdsModule() {
             Sound.set_pause(true);
             ads_log.log('Fix last ads time');
         } else if (state == "closed") {
+            Manager.trigger_message(ID_MESSAGES.MSG_ON_INTER_SHOWN, { result: true });
             Sound.set_pause(false);
         } else if (state == "failed") {
+            Manager.trigger_message(ID_MESSAGES.MSG_ON_INTER_SHOWN, { result: true });
             Sound.set_pause(false);
         }
     }
@@ -141,6 +147,11 @@ function AdsModule() {
         }
     }
 
+    function is_view_inter() {
+        const now = System.now();
+        return now - last_view_ads > config.ads_interval;
+    }
+
     function _show_interstitial(is_check = true) {
         const now = System.now();
         if (System.platform == "HTML5") {
@@ -148,6 +159,7 @@ function AdsModule() {
                 // fix time
             } else {
                 ads_log.log('Wait ads time:' + (config.ads_interval - (now - last_view_ads)));
+                Manager.trigger_message(ID_MESSAGES.MSG_ON_INTER_SHOWN, { result: false });
                 return;
             }
             instantgamesbridge.ads_show_interstitial(null, (result: string) => {/*ads_log.log("show interstitial start: " + result)*/ });
@@ -155,12 +167,21 @@ function AdsModule() {
         // android
         else if (System.platform == "Android") {
             ads_android.show_interstitial(!is_check ? 0 : config.ads_interval, config.ads_delay);
+            Manager.trigger_message(ID_MESSAGES.MSG_ON_INTER_SHOWN, { result: true });
+        }
+        else if (System.platform == 'Windows') {
+            log('fake-Inter show wait');
+            timer.delay(2, false, () => {
+                Manager.trigger_message(ID_MESSAGES.MSG_ON_INTER_SHOWN, { result: true });
+                log('fake-Inter show triggered');
+            });
         }
     }
     function _show_reward() {
         if (System.platform == "HTML5") {
             instantgamesbridge.ads_show_rewarded((result: string) => {/*ads_log.log("show rewarded start: " + result);*/ });
-        } else if (System.platform == "Android") {
+        }
+        else if (System.platform == "Android") {
             if (is_real_reward)
                 ads_android.show_rewarded();
             else
@@ -168,18 +189,16 @@ function AdsModule() {
             Manager.trigger_message(ID_MESSAGES.MSG_ON_REWARDED, { result: true });
         }
         else if (System.platform == 'Windows') {
-            log('fakeReward show wait');
+            log('fake-Reward show wait');
             timer.delay(2, false, () => {
                 Manager.trigger_message(ID_MESSAGES.MSG_ON_REWARDED, { result: true });
-                log('fakeReward show triggered');
+                log('fake-Reward show triggered');
             });
-
-
         }
     }
 
     function is_banner_supported() {
-        if (platform == "android" || platform == "ios")
+        if (platform == "android" || platform == "ios" || (System.platform == 'HTML5' && ['ok', 'vk'].includes(social_platform)))
             return true;
         else
             return false;
@@ -232,11 +251,15 @@ function AdsModule() {
             ads_android.destroy_banner();
     }
 
-    function show_reward() {
+    function show_reward(callback_shown?: CallbackAds) {
+        if (callback_shown != null)
+            cb_rewarded_shown = callback_shown;
         Manager.send("SHOW_REWARD");
     }
 
-    function show_interstitial(is_check = true) {
+    function show_interstitial(is_check = true, callback_shown?: CallbackAds) {
+        if (callback_shown != null)
+            cb_inter_shown = callback_shown;
         Manager.send("SHOW_INTER", { is_check });
     }
 
@@ -313,12 +336,23 @@ function AdsModule() {
         is_real_reward = val;
     }
 
+    function register_ads_callbacks() {
+        Manager.register_message(ID_MESSAGES.MSG_ON_INTER_SHOWN, (msg: any) => {
+            if (cb_inter_shown != null)
+                cb_inter_shown(true);
+        });
+        Manager.register_message(ID_MESSAGES.MSG_ON_REWARDED, (msg: any) => {
+            if (cb_rewarded_shown != null)
+                cb_rewarded_shown(msg.result as boolean);
+        });
+    }
+
     init(ADS_CONFIG.id_banners, ADS_CONFIG.id_inters, ADS_CONFIG.id_reward, ADS_CONFIG.banner_on_init, ADS_CONFIG.ads_interval, ADS_CONFIG.ads_delay, ads_init_callback);
 
     return {
         is_ready, get_social_platform, player_init, leaderboards_set_score, feedback_request_review,
         _on_message, add_favorite, set_social_share_params, social_share, is_share_supported,
-        show_reward, show_interstitial, show_banner, hide_banner, is_favorite_supported, leaderboards_get_entitys, set_real_reward_mode
+        show_reward, show_interstitial, show_banner, hide_banner, is_favorite_supported, leaderboards_get_entitys, set_real_reward_mode, is_view_inter, register_ads_callbacks
     };
 
 

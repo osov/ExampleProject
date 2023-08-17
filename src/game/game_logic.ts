@@ -10,7 +10,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 
 import * as flow from 'ludobits.m.flow';
-import { GoManager, IGameItem } from '../modules/GoManager';
+import { GoManager } from '../modules/GoManager';
 import { CellState, Miner } from './miner';
 
 interface CellData {

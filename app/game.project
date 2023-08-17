@@ -24,13 +24,11 @@ version = 1.0
 dependencies#0 = https://github.com/Insality/druid/archive/master.zip
 dependencies#1 = https://github.com/britzl/ludobits/archive/refs/heads/master.zip
 dependencies#2 = https://github.com/osov/defold-app-metrica/archive/refs/heads/main.zip
-dependencies#3 = https://github.com/osov/defold-yandex-easy-monetization/archive/refs/heads/main.zip
+dependencies#3 = https://github.com/osov/defold-yandex-sdk-ads/archive/refs/heads/main.zip
 dependencies#4 = https://github.com/britzl/defold-sharing/archive/master.zip
-dependencies#5 = https://github.com/britzl/defold-richtext/archive/master.zip
-dependencies#6 = https://github.com/defold/extension-review/archive/master.zip
-dependencies#7 = https://github.com/subsoap/vibrate/archive/master.zip
-dependencies#8 = https://github.com/indiesoftby/defold-yametrica/archive/refs/tags/1.0.0.zip
-dependencies#9 = https://github.com/Kyonin/instantgamesbridge/archive/refs/heads/main.zip
+dependencies#5 = https://github.com/defold/extension-review/archive/master.zip
+dependencies#6 = https://github.com/indiesoftby/defold-yametrica/archive/refs/tags/1.0.0.zip
+dependencies#7 = https://github.com/Kyonin/instantgamesbridge/archive/refs/heads/main.zip
 
 [native_extension]
 app_manifest = /project_settings/generated.appmanifest

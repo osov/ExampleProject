@@ -10,11 +10,13 @@ import * as flow from 'ludobits.m.flow';
 import { hex2rgba } from '../utils/utils';
 import * as camera from '../utils/camera';
 import { get_debug_intersect_points, is_intersect_zone } from '../utils/math_utils';
+import { IGameItem } from './modules_const';
 
-export interface IGameItem {
+interface DragData {
     _hash: hash;
-    is_clickable?: boolean;
-    is_dragable?: boolean;
+    click_pos: vmath.vector3;
+    start_pos: vmath.vector3;
+    z_index: number;
 }
 
 type CallbackFunction = () => void;
@@ -72,6 +74,10 @@ export function GoManager() {
         return get_render_order_hash(get_go_by_item(item));
     }
 
+    function get_sprite_hash(_go: hash) {
+        return go.get(msg.url(undefined, _go, "sprite"), "animation") as hash;
+    }
+
     function set_sprite_hash(_go: hash, id_anim: string) {
         sprite.play_flipbook(msg.url(undefined, _go, "sprite"), hash(id_anim));
     }
@@ -110,28 +116,33 @@ export function GoManager() {
         do_fade_anim_hash(get_go_by_item(item), value, timeSec, delay, prop);
     }
 
-    function set_position_xy_hash(_go: hash, x: number, y: number) {
+    function set_position_xy_hash(_go: hash, x: number, y: number, align_x = 0.5, align_y = 0.5) {
         const pos = go.get_position(_go);
         pos.x = x;
         pos.y = y;
+        if (align_x != 0.5 || align_y != 0.5) {
+            const size = get_go_sprite_size_hash(_go);
+            pos.x += (0.5 - align_x) * size.x;
+            pos.y += (0.5 - align_y) * size.y;
+        }
         go.set_position(pos, _go);
     }
 
-    function set_position_xy(item: IGameItem, x: number, y: number) {
-        set_position_xy_hash(get_go_by_item(item), x, y);
+    function set_position_xy(item: IGameItem, x: number, y: number, align_x = 0.5, align_y = 0.5) {
+        set_position_xy_hash(get_go_by_item(item), x, y, align_x, align_y);
     }
 
-    function move_to_with_time_hash(id: hash, pos: vmath.vector3, time: number, cb?: CallbackFunction) {
-        const src = go.get_position(id);
+    function move_to_with_time_hash(_go: hash, pos: vmath.vector3, time: number, cb?: CallbackFunction) {
+        const src = go.get_position(_go);
         pos.z = src.z;
-        go.animate(id, 'position', go.PLAYBACK_ONCE_FORWARD, pos, go.EASING_LINEAR, time, 0, cb);
+        go.animate(_go, 'position', go.PLAYBACK_ONCE_FORWARD, pos, go.EASING_LINEAR, time, 0, cb);
     }
 
-    function move_to_with_speed_hash(id: hash, pos: vmath.vector3, speed: number, cb?: CallbackFunction) {
-        const src = go.get_position(id);
+    function move_to_with_speed_hash(_go: hash, pos: vmath.vector3, speed: number, cb?: CallbackFunction) {
+        const src = go.get_position(_go);
         pos.z = src.z;
         const dist = vmath.length((src - pos) as vmath.vector3);
-        move_to_with_time_hash(id, pos, dist / speed, cb);
+        move_to_with_time_hash(_go, pos, dist / speed, cb);
     }
 
     function move_to_with_speed(item: IGameItem, pos: vmath.vector3, speed: number, cb?: CallbackFunction) {
@@ -142,7 +153,7 @@ export function GoManager() {
         const sprite_url = msg.url(undefined, _go, name);
         const sprite_scale = go.get(sprite_url, "scale") as vmath.vector3;
         const size = go.get(sprite_url, "size") as vmath.vector3;
-        const go_scale = go.get_world_scale(_go);
+        const go_scale = go.get_scale(_go);
         return vmath.vector3(size.x * sprite_scale.x * go_scale.x, size.y * sprite_scale.y * go_scale.y, 0);
     }
 
@@ -168,7 +179,7 @@ export function GoManager() {
         return is_intersect_hash(pos, get_go_by_item(item), inner_offset);
     }
 
-    function get_item_from_pos(x: number, y: number) {
+    function get_item_from_pos(x: number, y: number): null | [IGameItem, IGameItem[]] {
         const tp = camera.screen_to_world(x, y);
         const results = [];
         const zlist = [];
@@ -193,49 +204,57 @@ export function GoManager() {
                     result = results[i];
                 }
             }
-            return result;
+            return [result, results];
         }
         return null;
     }
 
-    function send(id_message: hash, message: any) {
-        msg.post('/game_logic#game', id_message, message);
-    }
-
     function on_click(x: number, y: number, isDown: boolean, isMove = false) {
         if (isMove) {
-            send(ID_MESSAGES.MSG_ON_MOVE, { x, y });
+            Manager.send_game('MSG_ON_MOVE', { x, y });
             return on_move(x, y);
         }
         if (isDown) {
-            send(ID_MESSAGES.MSG_ON_DOWN, { x, y });
+            Manager.send_game('MSG_ON_DOWN', { x, y });
             return on_down(x, y);
         }
         else {
-            send(ID_MESSAGES.MSG_ON_UP, { x, y });
-            return on_up(x, y);
+            on_up(x, y);
+            Manager.send_game('MSG_ON_UP', { x, y });
         }
     }
 
     let cp = vmath.vector3();
     let sp = vmath.vector3();
     let down_item: IGameItem | null = null;
+    let cur_x = 0; let cur_y = 0;
     function on_down(x: number, y: number) {
         // todo debug
         //const tmp = camera.screen_to_world(x, y);
         //set_position_xy_hash('point', tmp.x, tmp.y);
-
+        cur_x = x;
+        cur_y = y;
         down_item = null;
-        const item = get_item_from_pos(x, y);
-        if (!item)
+        const result = get_item_from_pos(x, y);
+        if (!result)
             return;
+        const [item, items] = result;
         down_item = item;
         cp = camera.screen_to_world(x, y);
         sp = go.get_position(item._hash);
-        send(ID_MESSAGES.MSG_ON_DOWN_HASH, { hash: item._hash });
+        const hashes: hash[] = [];
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            hashes.push(item._hash);
+        }
+        Manager.send_game('MSG_ON_DOWN_HASHES', { hashes });
+        Manager.send_game('MSG_ON_DOWN_ITEM', { item });
     }
 
     function on_move(x: number, y: number) {
+        cur_x = x;
+        cur_y = y;
+        process_dragging_list(x, y);
         if (!down_item)
             return;
         if (!down_item.is_dragable)
@@ -246,14 +265,28 @@ export function GoManager() {
         const np = (sp + dp) as vmath.vector3;
         np.z = src.z;
         go.set_position(np, _hash);
-        send(ID_MESSAGES.MSG_ON_MOVE_HASH, { hash: _hash });
+        Manager.send_game('MSG_ON_MOVE_ITEM', { item: down_item });
     }
 
     function on_up(x: number, y: number) {
+        cur_x = x;
+        cur_y = y;
+        const result = get_item_from_pos(x, y);
+        if (result) {
+            const [item, items] = result;
+            const hashes: hash[] = [];
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                hashes.push(item._hash);
+
+            }
+            Manager.send_game('MSG_ON_UP_HASHES', { hashes });
+        }
+
         if (!down_item)
             return;
         const item = down_item;
-        send(ID_MESSAGES.MSG_ON_UP_HASH, { hash: item._hash });
+        Manager.send_game('MSG_ON_UP_ITEM', { item });
         down_item = null;
     }
 
@@ -261,7 +294,8 @@ export function GoManager() {
         return game_items[index];
     }
 
-    function add_game_item(gi: IGameItem, add_go_list = true) {
+
+    function add_game_item<T extends IGameItem>(gi: T, add_go_list = true) {
         game_items.push(gi);
         if (add_go_list)
             go_list.push(gi._hash);
@@ -277,6 +311,7 @@ export function GoManager() {
                 return true;
             }
         }
+        return false;
     }
 
     function delete_item(item: IGameItem, remove_from_scene = true) {
@@ -298,6 +333,70 @@ export function GoManager() {
         game_items = [];
         go_list = [];
         flow.frames(5);
+    }
+
+
+
+    let drag_list: DragData[] = [];
+    function start_dragging_list(list: hash[], inc_z_index = 0) {
+        stop_dragging_list(list, true);
+        const click_pos = camera.screen_to_world(cur_x, cur_y);
+        for (let i = 0; i < list.length; i++) {
+            const h = list[i];
+            const z_index = get_render_order_hash(h);
+            set_render_order_hash(h, z_index + inc_z_index);
+            drag_list.push({ _hash: h, click_pos, start_pos: go.get_position(h), z_index });
+        }
+    }
+
+    function process_dragging_list(x: number, y: number) {
+        const wp = camera.screen_to_world(x, y);
+        for (let i = 0; i < drag_list.length; i++) {
+            const dl = drag_list[i];
+            const _hash = dl._hash;
+            const dp = ((wp - dl.click_pos)) as vmath.vector3;
+            const np = (dl.start_pos + dp) as vmath.vector3;
+            np.z = dl.start_pos.z;
+            go.set_position(np, _hash);
+        }
+    }
+
+    function stop_dragging_list(list: hash[], reset_pos = false) {
+        for (let i = 0; i < list.length; i++) {
+            const h = list[i];
+            for (let j = drag_list.length - 1; j >= 0; j--) {
+                const dl = drag_list[j];
+                if (h == dl._hash) {
+                    if (reset_pos)
+                        go.set_position(dl.start_pos, dl._hash);
+                    set_render_order_hash(dl._hash, dl.z_index);
+                    drag_list.splice(j, 1);
+                }
+            }
+        }
+    }
+
+    function stop_all_dragging(reset_pos = false) {
+        const tmp: hash[] = [];
+        for (let i = 0; i < drag_list.length; i++) {
+            tmp.push(drag_list[i]._hash);
+        }
+        stop_dragging_list(tmp, reset_pos);
+    }
+
+    function reset_dragging_list(time: number, cb_end?: CallbackFunction) {
+        let is_end = false;
+        for (let i = 0; i < drag_list.length; i++) {
+            const dl = drag_list[i];
+            move_to_with_time_hash(dl._hash, dl.start_pos, time, () => {
+                if (!is_end) {
+                    is_end = true;
+                    stop_all_dragging();
+                    if (cb_end)
+                        cb_end();
+                }
+            });
+        }
     }
 
 
@@ -323,6 +422,21 @@ export function GoManager() {
         do_message, on_click, make_go, set_render_order, get_render_order, do_move_anim, do_scale_anim, do_fade_anim, do_move_anim_hash, do_fade_anim_hash, do_scale_anim_hash,
         get_item_by_go, get_go_by_item, clear_and_remove_items, get_item_by_index, set_sprite_hash, set_color_hash, set_rotation_hash, add_game_item,
         move_to_with_speed_hash, move_to_with_speed, set_position_xy, set_position_xy_hash, is_intersect, is_intersect_hash, delete_item, delete_go, draw_debug_intersect, set_render_order_hash, get_render_order_hash,
-        move_to_with_time_hash
+        move_to_with_time_hash, get_sprite_hash, start_dragging_list, stop_all_dragging, stop_dragging_list, reset_dragging_list
     };
 }
+
+/*
+
+MSG_ON_DOWN
+MSG_ON_DOWN_HASHES
+MSG_ON_DOWN_ITEM
+
+MSG_ON_MOVE
+MSG_ON_MOVE_ITEM
+
+MSG_ON_UP_HASHES
+MSG_ON_UP_ITEM
+MSG_ON_UP
+
+*/
