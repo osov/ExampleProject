@@ -6,7 +6,7 @@
     "@ts-defold/library": "latest",
     "@ts-defold/tstl-export-as-global": "latest",
     "@ts-defold/tstl-userdata-sugar": "latest",
-    "@ts-defold/types": "latest",
+    "@ts-defold/types": "1.2.20",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
     "eslint": "^8.28.0",
