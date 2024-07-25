@@ -19,10 +19,7 @@ node_modules/
 .eslintcache
 
 # Generated
-app/modules/
-app/scripts/
-app/lualib_bundle.lua
-!src/**
+
 
 # OS
 .DS_Store
