@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import * as instantgamesbridge from "instantgamesbridge.instantgamesbridge";
+//import * as instantgamesbridge from "instantgamesbridge.instantgamesbridge";
 import { ADS_CONFIG } from "../main/game_config";
 import * as ads_android from "../utils/ads_android";
 
@@ -66,21 +66,7 @@ function AdsModule() {
         last_view_ads = System.now() - (config.ads_interval - config.ads_delay);
         // html5
         if (System.platform == "HTML5") {
-            instantgamesbridge.init((success: boolean) => {
-                social_params = instantgamesbridge.social();
-                social_platform = instantgamesbridge.get_platform_id() as WebPlatform;
-                ads_log.log("Detect platform:", social_platform);
-                if (social_platform == "vk") {
-                    instantgamesbridge.call_native_sdk("send", ["VKWebAppGetClientVersion"], (result: { platform: BridgePlatforms }) => {
-                        platform = result.platform;
-                        init_callback();
-                    });
-                } else {
-                    init_callback();
-                }
-            });
-            instantgamesbridge.callbacks.interstitial_state_changed = interstitial_state_changed;
-            instantgamesbridge.callbacks.rewarded_state_changed = rewarded_state_changed;
+            init_callback();
         }
         // android
         else if (System.platform == "Android") {
@@ -100,23 +86,19 @@ function AdsModule() {
     }
 
     function player_init(authorizationOptions = {}, callback: any) {
-        if (System.platform == "HTML5")
-            instantgamesbridge.player_init(authorizationOptions, callback);
+        //
     }
 
     function leaderboards_set_score(setScoreOptions = {}, callback: any) {
-        if (System.platform == "HTML5")
-            instantgamesbridge.yandex_set_leaderboard(setScoreOptions, callback);
+        //
     }
 
     function leaderboards_get_entitys(options: any, callback: any) {
-        if (System.platform == "HTML5")
-            instantgamesbridge.yandex_get_entitys(options, callback);
+        //
     }
 
     function feedback_request_review(callback: any) {
-        if (System.platform == "HTML5")
-            instantgamesbridge.rate(callback);
+        //
     }
 
     function interstitial_state_changed(state: string) {
@@ -162,7 +144,7 @@ function AdsModule() {
                 Manager.trigger_message(ID_MESSAGES.MSG_ON_INTER_SHOWN, { result: false });
                 return;
             }
-            instantgamesbridge.ads_show_interstitial(null, (result: string) => {/*ads_log.log("show interstitial start: " + result)*/ });
+            //
         }
         // android
         else if (System.platform == "Android") {
@@ -179,7 +161,7 @@ function AdsModule() {
     }
     function _show_reward() {
         if (System.platform == "HTML5") {
-            instantgamesbridge.ads_show_rewarded((result: string) => {/*ads_log.log("show rewarded start: " + result);*/ });
+            //
         }
         else if (System.platform == "Android") {
             if (is_real_reward)
@@ -233,7 +215,7 @@ function AdsModule() {
             },
         };
         if (System.platform == "HTML5" && social_platform == "vk") {
-            instantgamesbridge.ads_show_banner(bannerOptions, (result: string) => ads_log.log("show banner: " + result));
+            //
         } else if (System.platform == "Android") {
             ads_android.load_banner(true);
             ads_android.show_banner(_convert_positions(pos));
@@ -245,8 +227,6 @@ function AdsModule() {
     function _hide_banner() {
         if (!is_banner_supported())
             return;
-        if (System.platform == "HTML5" && social_platform == "vk")
-            instantgamesbridge.ads_hide_banner((result: string) => ads_log.log("hide banner: " + result));
         else if (System.platform == "Android")
             ads_android.destroy_banner();
     }
@@ -282,7 +262,7 @@ function AdsModule() {
 
     function social_share() {
         if (System.platform == "HTML5") {
-            instantgamesbridge.social_share(share_options, (result: any) => ads_log.log('social share', result as string));
+            //
         } else {
             if (share != null)
                 share.text("https://play.google.com/store/apps/details?id=" + sys.get_config("android.package"));
@@ -304,7 +284,6 @@ function AdsModule() {
     function add_favorite() {
         if (!is_favorite_supported())
             return;
-        instantgamesbridge.social_add_favotire((result: any) => log('favorite', result as string));
     }
 
     function _on_message(_this: any, message_id: hash, message: any, sender: hash): void {
@@ -319,12 +298,6 @@ function AdsModule() {
     }
 
     function ads_init_callback() {
-        if (System.platform == "HTML5") {
-            const code = instantgamesbridge.get_language() as string;
-            if (get_social_platform() == "yandex")
-                show_interstitial(false);
-            Lang.set_custom_lang(code); // используем для установки и применения какого-то конкретного языка(например после инита в хтмл5)
-        }
         _is_ready = true;
     }
 
