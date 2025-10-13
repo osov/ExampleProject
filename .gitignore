@@ -33,3 +33,4 @@ app/build
 *.pyc
 app/builtins
 dmengine*
+app/.editor_settings
