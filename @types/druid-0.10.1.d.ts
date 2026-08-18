@@ -1,6 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-empty-interface */
 /// <library version="0.10.1" src="https://github.com/Insality/druid/archive/master.zip" />
+
+/** @noResolution */
+declare namespace gui {
+    export function cancel_animations(node: node, property?: any): void;
+}
+
+/** @noResolution */
+declare namespace sys {
+    export function get_config_string(key: string): string;
+}
 /** @noResolution */
 
 declare module 'druid.druid' {
